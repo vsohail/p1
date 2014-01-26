@@ -11,6 +11,7 @@
 
 #include <p1kern.h>
 #include <console.h>
+#include <handler_install.h>
 /* Think about where this declaration
  * should be... probably not here!
  */
@@ -80,4 +81,5 @@ int kernel_main(mbinfo_t *mbinfo, int argc, char **argv, char **envp)
  **/
 void tick(unsigned int numTicks)
 {
+  lprintf( "Tick(s): %d\n",numTicks);
 }

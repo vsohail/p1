@@ -30,7 +30,7 @@ TABSTOP = 8
 # the object files which make up your drivers.
 ##################################################
 #
-COMMON_OBJS = fake.o console.o
+COMMON_OBJS = fake.o console.o timer_handler.o timer.o handler_install.o
 
 ##################################################
 # Object files from 410kern/ for just the game
