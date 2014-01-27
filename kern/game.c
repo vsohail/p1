@@ -10,7 +10,6 @@
  */
 
 #include <p1kern.h>
-#include <console.h>
 #include <handler_install.h>
 /* Think about where this declaration
  * should be... probably not here!
@@ -48,13 +47,11 @@ int kernel_main(mbinfo_t *mbinfo, int argc, char **argv, char **envp)
    * Initialize device-driver library.
    */
   handler_install(tick);
-  console_init();
   /*
    * When kernel_main() begins, interrupts are DISABLED.
    * You should delete this comment, and enable them --
    * when you are ready.
    */
-
   lprintf( "Hello from a brand new kernel!" );
   char i='a';int j;
   const char arr[6]={'h','e','\n','l','l','o'};

@@ -1,15 +1,88 @@
 #include <p1kern.h>
 #include <stdio.h>
 #include <timer.h>
+#include <kbd.h>
 #include <x86/asm.h>
 #include <x86/timer_defines.h>
-void *tick_addr;
+#include <x86/keyhelp.h>
+#include <console.h>
+#include <x86/seg.h>
+void (*tick_addr)(unsigned int);
+unsigned int key_history[256];
+unsigned int front;
+unsigned int rear;
+unsigned int max_size;
+unsigned int curr_size;
+unsigned int remove_q();
+unsigned int insert_q(unsigned int val);
+void check(unsigned int *val);
+
+unsigned int insert_q(unsigned int val)
+{
+  disable_interrupts();
+  if((++curr_size)==max_size+1) {
+    curr_size--;
+    key_history[front]=val;
+    front++;
+    check(&front);
+    rear++;
+    check(&rear);
+    enable_interrupts();
+    return val;
+  }
+  rear++;
+  check(&rear);
+  key_history[rear]=val;
+  enable_interrupts();
+  return val;
+}
+
+void check(unsigned int *val)
+{
+  if(*val==max_size)
+    *val=0;
+}
+
+unsigned int remove_q()
+{
+  disable_interrupts();
+  unsigned int val;
+  if((--curr_size)==-1) {
+    curr_size++;
+    enable_interrupts();
+    return -1;
+  }
+  val=key_history[front];
+  front++;
+  check(&front);
+  enable_interrupts();
+  return val;
+}
+
 int handler_install(void (*tickback)(unsigned int))
 {
+  console_init();
+
   tick_addr=tickback;
-  *(idt_base()+TIMER_IDT_ENTRY)=timer_wrapper;
+  void *base;
+  base=(idt_base()+(TIMER_IDT_ENTRY)*8);
+  *(unsigned *)base=((SEGSEL_KERNEL_CS<<16) | (((unsigned)timer_wrapper)&0xFFFF));
+  base += 4;
+  *(unsigned *)base=(((unsigned)timer_wrapper)&0xFFFF0000) | (0x8F<<8);
   outb(TIMER_MODE_IO_PORT,TIMER_SQUARE_WAVE);
   outb(TIMER_PERIOD_IO_PORT,0x9C);
   outb(TIMER_PERIOD_IO_PORT,0x2E);
+
+  front=0;
+  rear=-1;
+  max_size=256;
+  curr_size=0;
+  base=(idt_base()+(KEY_IDT_ENTRY)*8);
+  *(unsigned *)base=((SEGSEL_KERNEL_CS<<16) | (((unsigned)kbd_wrapper)&0xFFFF));
+  base += 4;
+  *(unsigned *)base=(((unsigned)kbd_wrapper)&0xFFFF0000) | (0x8F<<8);
+
+  enable_interrupts();
+
   return 0;
 }
