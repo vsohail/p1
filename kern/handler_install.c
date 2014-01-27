@@ -11,36 +11,25 @@ void (*tick_addr)(unsigned int);
 unsigned int key_history[256];
 unsigned int front;
 unsigned int rear;
-unsigned int max_size;
 unsigned int curr_size;
 unsigned int remove_q();
 unsigned int insert_q(unsigned int val);
-void check(unsigned int *val);
-
+#define MAX_SIZE 256
 unsigned int insert_q(unsigned int val)
 {
   disable_interrupts();
-  if((++curr_size)==max_size+1) {
+  if((++curr_size)==MAX_SIZE+1) {
     curr_size--;
     key_history[front]=val;
-    front++;
-    check(&front);
-    rear++;
-    check(&rear);
+    front=(front+1)%MAX_SIZE;
+    rear=(rear+1)%MAX_SIZE;
     enable_interrupts();
     return val;
   }
-  rear++;
-  check(&rear);
+  rear=(rear+1)%MAX_SIZE;
   key_history[rear]=val;
   enable_interrupts();
   return val;
-}
-
-void check(unsigned int *val)
-{
-  if(*val==max_size)
-    *val=0;
 }
 
 unsigned int remove_q()
@@ -53,8 +42,7 @@ unsigned int remove_q()
     return -1;
   }
   val=key_history[front];
-  front++;
-  check(&front);
+  front=(front+1)%MAX_SIZE;
   enable_interrupts();
   return val;
 }
@@ -75,7 +63,6 @@ int handler_install(void (*tickback)(unsigned int))
 
   front=0;
   rear=-1;
-  max_size=256;
   curr_size=0;
   base=(idt_base()+(KEY_IDT_ENTRY)*8);
   *(unsigned *)base=((SEGSEL_KERNEL_CS<<16) | (((unsigned)kbd_wrapper)&0xFFFF));

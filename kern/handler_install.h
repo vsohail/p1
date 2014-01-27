@@ -4,7 +4,6 @@ unsigned int front;
 unsigned int rear;
 unsigned int max_size;
 unsigned int curr_size;
-void check(unsigned int *val);
 unsigned int remove_q();
 unsigned int insert_q(unsigned int val);
 int handler_install(void (*tickback)(unsigned int));
