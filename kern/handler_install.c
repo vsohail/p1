@@ -7,14 +7,16 @@
 #include <x86/keyhelp.h>
 #include <console.h>
 #include <x86/seg.h>
+
+#define MAX_SIZE 256
+
 void (*tick_addr)(unsigned int);
-unsigned int key_history[256];
 unsigned int front;
 unsigned int rear;
 unsigned int curr_size;
 unsigned int remove_q();
 unsigned int insert_q(unsigned int val);
-#define MAX_SIZE 256
+unsigned int key_history[MAX_SIZE];
 unsigned int insert_q(unsigned int val)
 {
   disable_interrupts();

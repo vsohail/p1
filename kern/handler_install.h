@@ -1,5 +1,7 @@
+#define MAX_SIZE 256
+
 void (*tick_addr)(unsigned int);
-unsigned int key_history[256];
+unsigned int key_history[MAX_SIZE];
 unsigned int front;
 unsigned int rear;
 unsigned int max_size;

@@ -33,7 +33,6 @@ void tick(unsigned int numTicks);
 #include <x86/asm.h>                /* enable_interrupts() */
 
 #include <string.h>
-
 /** @brief Kernel entrypoint.
  *  
  *  This is the entrypoint for the kernel.  It simply sets up the
@@ -52,17 +51,6 @@ int kernel_main(mbinfo_t *mbinfo, int argc, char **argv, char **envp)
    * You should delete this comment, and enable them --
    * when you are ready.
    */
-  lprintf( "Hello from a brand new kernel!" );
-  char i='a';int j;
-  const char arr[6]={'h','e','\n','l','l','o'};
-  for(j=0;j<=81;j++)
-    putbyte(i);
-  putbyte('\n');
-  putbyte('\n');
-  putbyte('\n');
-  for(j=0;j<=81;j++)
-    putbyte(i);
-  putbytes(arr,5);
   while (1) {
     continue;
   }
@@ -78,5 +66,6 @@ int kernel_main(mbinfo_t *mbinfo, int argc, char **argv, char **envp)
  **/
 void tick(unsigned int numTicks)
 {
-  lprintf( "Tick(s): %d\n",numTicks);
+  if(numTicks%100==0)
+   lprintf("Tick\n");
 }
