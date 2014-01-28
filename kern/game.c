@@ -39,6 +39,7 @@ void game_init();
 void display_prompts();
 void set_block(unsigned int r,unsigned int c,int color);
 void set_game_cursor(int r,int c,char ch);
+void render_mesh();
 unsigned int score;
 unsigned int row_pos;
 unsigned int col_pos;
@@ -67,6 +68,23 @@ int kernel_main(mbinfo_t *mbinfo, int argc, char **argv, char **envp)
   }
 
   return 0;
+}
+void render_mesh()
+{
+  int color,i,j;
+  for(i=0;i<10;i++) {
+    for(j=0;j<15;j++) {
+      color=color_arr[i][j];
+      if(color==-1)
+        set_block(i,j,BLACK);
+      if(color==0)
+        set_block(i,j,BLUE);
+      if(color==1)
+        set_block(i,j,RED);
+      if(color==2)
+        set_block(i,j,GREEN);
+    }
+  }
 }
 void game_run()
 {
@@ -136,11 +154,9 @@ void set_game_cursor(int r,int c,char ch)
   c+=2;r+=2;
   set_cursor(r,c+1);
   putbyte(ch);
-  set_cursor(r,c+2);
   putbyte(ch);
   set_cursor(r+1,c+1);
   putbyte(ch);
-  set_cursor(r+1,c+2);
   putbyte(ch);
 
 }
