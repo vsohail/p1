@@ -40,6 +40,8 @@ void display_prompts();
 void set_block(unsigned int r,unsigned int c,int color);
 void set_game_cursor(int r,int c,char ch);
 void render_mesh();
+void deleteblocks(int row, int col,int init);
+void compact();
 unsigned int score;
 unsigned int row_pos;
 unsigned int col_pos;
@@ -119,6 +121,12 @@ void game_run()
       col_pos++;
       set_game_cursor(row_pos,col_pos,'|');
     }
+    if(c==' ') {
+      deleteblocks(row_pos,col_pos,0);
+      compact();
+      render_mesh();
+      set_game_cursor(row_pos,col_pos,'|');
+    }
   }
 }
 void game_init()
@@ -150,6 +158,8 @@ void set_game_cursor(int r,int c,char ch)
     set_term_color(RED);
   else if(color_arr[r][c]==2)
     set_term_color(GREEN);
+  else if(color_arr[r][c]==-1)
+    set_term_color(BLACK);
   r*=2;c*=4;
   c+=2;r+=2;
   set_cursor(r,c+1);
@@ -207,4 +217,83 @@ void tick(unsigned int numTicks)
   set_cursor(23,56);
   putbytes(buf,strlen(buf));
   set_term_color(color);
+}
+void compact()
+{
+  int i,j,k;
+  for(i=0;i<15;i++) {
+    for(j=9;j>0;j--) {
+      if(color_arr[j][i]==-1) {
+        for(k=j-1;k>=0;k--) {
+          if(color_arr[k][i]!=-1) {
+            color_arr[j][i]=color_arr[k][i];
+            color_arr[k][i]=-1;
+            j--;
+          }
+        }
+        break;
+      }
+    }
+  }
+  int count;
+  for(i=14;i>0;i--) {
+    count=0;
+    for(j=0;j<10;j++) {
+      if(color_arr[j][i]==-1) {
+        count++;
+      }
+    }
+    if(count==10) {
+      for(k=i-1;k>=0;k--) {
+        count=0;
+        for(j=0;j<10;j++) {
+          if(color_arr[j][k]==-1) {
+            count++;
+          }
+        }
+        if(count!=10) {
+          for(j=0;j<10;j++) {
+            color_arr[j][i]=color_arr[j][k];
+            color_arr[j][k]=-1;
+          }
+          i--;
+        }
+      }
+      break;
+    }
+  }
+}
+void deleteblocks(int row, int col,int init)
+{
+  if(row < 0 || row >= 10 || col < 0 || col >= 15)
+    return;
+  int color = color_arr[row][col];
+  if(color == -1)
+    return;
+  if(init)
+    color_arr[row][col]=-1;
+  if(row - 1 >= 0) {
+    if(color_arr[row - 1][col] == color) {
+      color_arr[row][col]=-1;
+      deleteblocks(row - 1, col,1);
+    }
+  }
+  if(row + 1 < 10) {
+    if(color_arr[row + 1][col] == color) {
+      color_arr[row][col]=-1;
+      deleteblocks(row + 1,col,1);
+    }
+  }
+  if(col - 1 >= 0) {
+    if(color_arr[row][col - 1] == color) {
+      color_arr[row][col]=-1;
+      deleteblocks(row, col - 1,1);
+    }
+  }
+  if(col + 1 < 15) {
+    if(color_arr[row][col + 1] == color) {
+      color_arr[row][col]=-1;
+      deleteblocks(row, col + 1,1);
+    }
+  }
 }
