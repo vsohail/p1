@@ -41,9 +41,14 @@ void set_block(unsigned int r,unsigned int c,int color);
 void set_game_cursor(int r,int c,char ch);
 void render_mesh();
 void deleteblocks(int row, int col,int init);
+void display_string(char *str,int row,int col,int color);
 void compact();
+int game_complete();
 unsigned int score;
 unsigned int row_pos;
+int last_color;
+int selected_area_size;
+int combo_multiplier;
 unsigned int col_pos;
 unsigned int color_arr[10][15];
 #define BLUE (BGND_BLUE | FGND_WHITE)
@@ -65,6 +70,9 @@ int kernel_main(mbinfo_t *mbinfo, int argc, char **argv, char **envp)
   handler_install(tick);
   enable_interrupts();
   game_init();
+  display_string("Congratulations!!",0,15,BLUE);
+  display_string("Game",0,34,RED);
+  display_string("Over",0,40,GREEN);
   while (1) {
     continue;
   }
@@ -90,7 +98,7 @@ void render_mesh()
 }
 void game_run()
 {
-  char c;
+  char c;char combo[8]="";
   while(1){
     c=readchar();
     if(c=='w') {
@@ -122,10 +130,44 @@ void game_run()
       set_game_cursor(row_pos,col_pos,'|');
     }
     if(c==' ') {
+      int curr_color=color_arr[row_pos][col_pos];
+      if(curr_color==-1)
+        continue;
       deleteblocks(row_pos,col_pos,0);
-      compact();
-      render_mesh();
-      set_game_cursor(row_pos,col_pos,'|');
+      if(selected_area_size) {
+        compact();
+        selected_area_size++;
+        if(last_color==curr_color)
+          combo_multiplier++;
+        else {
+          last_color=curr_color;
+          char *temp=combo;
+          while((*temp)!='\0') {
+            *temp=' ';temp++;
+          }
+          display_string(combo,13,67,BLACK);
+          combo_multiplier=1;
+        }
+        score+=selected_area_size*combo_multiplier;
+        snprintf(combo,8,"%dX",combo_multiplier);
+        if(curr_color==0) {
+          display_string(combo,13,67,BLUE);
+        }
+        if(curr_color==1) {
+          display_string(combo,13,67,RED);
+        }
+        if(curr_color==2) {
+          display_string(combo,13,67,GREEN);
+        }
+        selected_area_size=0;
+        render_mesh();
+        if(!game_complete())
+          set_game_cursor(row_pos,col_pos,'|');
+        else {
+          set_game_cursor(row_pos,col_pos,'\0');
+          break;
+        }
+      }
     }
   }
 }
@@ -148,7 +190,11 @@ void game_init()
   display_prompts();
   row_pos=0;col_pos=0;
   set_game_cursor(row_pos,col_pos,'|');
+  last_color=-1;
+  selected_area_size=0;
+  combo_multiplier=1;
   game_run();
+  return;
 }
 void set_game_cursor(int r,int c,char ch)
 {
@@ -172,20 +218,25 @@ void set_game_cursor(int r,int c,char ch)
 }
 void display_prompts()
 {
-  set_term_color(BLACK);
-  char prompt[25];
-  set_cursor(23,1);
-  sprintf(prompt,"Current time: ");
-  putbytes(prompt,strlen(prompt));
-  set_cursor(23,49);
-  sprintf(prompt,"Score: ");
-  putbytes(prompt,strlen(prompt));
-  set_cursor(24,1);
-  sprintf(prompt,"Press F1 for intructions.");
-  putbytes(prompt,strlen(prompt));
-  set_cursor(24,62);
-  sprintf(prompt,"Sohil Habib 2014");
-  putbytes(prompt,strlen(prompt));
+  char prompt[32];
+  snprintf(prompt,32,"Current time: ");
+  display_string(prompt,23,1,BLACK);
+  snprintf(prompt,32,"Score: ");
+  display_string(prompt,23,49,BLACK);
+  snprintf(prompt,32,"Press 'X' for intructions.");
+  display_string(prompt,24,1,BLACK);
+  snprintf(prompt,32,"Sohil Habib 2014");
+  display_string(prompt,24,62,BLACK);
+  snprintf(prompt,32,"!!MULTIPLIER!!");
+  display_string(prompt,12,63,BLACK);
+  snprintf(prompt,32,"0X");
+  display_string(prompt,13,67,BLACK);
+}
+void display_string(char *str,int row,int col,int color)
+{
+  set_term_color(color);
+  set_cursor(row,col);
+  putbytes(str,strlen(str));
 }
 void set_block(unsigned int r,unsigned int c,int color)
 {
@@ -206,16 +257,13 @@ void tick(unsigned int numTicks)
 {
   int sec=numTicks/100;
   int msec=numTicks%100;
-  char buf[10];
+  char buf[32];
   int color;
   get_term_color(&color);
-  set_term_color(BLACK);
-  sprintf(buf,"%d.%ds",sec,msec);
-  set_cursor(23,15);
-  putbytes(buf,strlen(buf));
-  sprintf(buf,"%d",score);
-  set_cursor(23,56);
-  putbytes(buf,strlen(buf));
+  snprintf(buf,32,"%d.%ds",sec,msec);
+  display_string(buf,23,15,BLACK);
+  snprintf(buf,32,"%d",score);
+  display_string(buf,23,56,BLACK);
   set_term_color(color);
 }
 void compact()
@@ -263,15 +311,38 @@ void compact()
     }
   }
 }
+int game_complete()
+{
+  int row,col;
+  for(col = 14; col >=0; col--)
+  {
+    for(row = 9; row > 0; row--)
+    {
+      int color = color_arr[row][col];
+      if(color == -1)
+        break;
+      else
+      {
+        if(color_arr[row - 1][col] == color)
+          return 0;
+        else if(col-1 >= 0)
+          if(color_arr[row][col-1] == color)
+            return 0;
+      }
+    }
+  }
+  return 1;
+
+}
 void deleteblocks(int row, int col,int init)
 {
   if(row < 0 || row >= 10 || col < 0 || col >= 15)
     return;
   int color = color_arr[row][col];
-  if(color == -1)
-    return;
-  if(init)
+  if(init) {
     color_arr[row][col]=-1;
+    selected_area_size++;
+  }
   if(row - 1 >= 0) {
     if(color_arr[row - 1][col] == color) {
       color_arr[row][col]=-1;
