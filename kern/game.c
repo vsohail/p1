@@ -43,12 +43,21 @@ void render_mesh();
 void deleteblocks(int row, int col,int init);
 void display_string(char *str,int row,int col,int color);
 void compact();
+void home_screen();
+void complete_screen();
+void home_prompts();
+void instruction_screen();
+void game_run();
 int game_complete();
 unsigned int score;
 unsigned int row_pos;
 int last_color;
+int game_time;
+int high_score;
+enum game_state {exit,pause,resume,complete} curr_state;
 int selected_area_size;
 int combo_multiplier;
+int combo_color;
 unsigned int col_pos;
 unsigned int color_arr[10][15];
 #define BLUE (BGND_BLUE | FGND_WHITE)
@@ -69,15 +78,42 @@ int kernel_main(mbinfo_t *mbinfo, int argc, char **argv, char **envp)
    */
   handler_install(tick);
   enable_interrupts();
-  game_init();
+  game_run();
+  return 0;
+}
+void game_run()
+{
+  hide_cursor();
+  curr_state=exit;
+  home_screen();
+  do {
+    game_init();
+    if(curr_state==complete)
+      complete_screen();
+    if(curr_state==exit) {
+      home_screen();
+    }
+  }while(curr_state!=exit);
+}
+void complete_screen()
+{
   display_string("Congratulations!!",0,15,BLUE);
   display_string("Game",0,34,RED);
   display_string("Over",0,40,GREEN);
-  while (1) {
-    continue;
+  display_string("'r' to restart",9,30,BLACK);
+  display_string("'e' to exit",10,30,BLACK);
+  char c;
+  while(1) {
+    c=readchar();
+    if(c=='r') {
+      curr_state=resume;
+      return;
+    }
+    if(c=='e') {
+      curr_state=exit;
+      return;
+    }
   }
-
-  return 0;
 }
 void render_mesh()
 {
@@ -96,7 +132,84 @@ void render_mesh()
     }
   }
 }
-void game_run()
+void instruction_screen()
+{
+  char prompt[32];
+  set_term_color(BLACK);
+  clear_console();
+  snprintf(prompt,32,"!!Instructions!!");
+  display_string(prompt,6,30,BLACK);
+  snprintf(prompt,32,"+---+");
+  display_string(prompt,8,35,BLACK);
+  snprintf(prompt,32,"| W |");
+  display_string(prompt,9,35,BLACK);
+  snprintf(prompt,32,"+---+");
+  display_string(prompt,10,35,BLACK);
+  snprintf(prompt,32,"+---++---++---+");
+  display_string(prompt,11,30,BLACK);
+  snprintf(prompt,32,"TO MOVE CURSOR");
+  display_string(prompt,11,10,BLACK);
+  snprintf(prompt,32,"| A || S || D |");
+  display_string(prompt,12,30,BLACK);
+  snprintf(prompt,32,"+---++---++---+");
+  display_string(prompt,13,30,BLACK);
+  snprintf(prompt,32,"+-------------+");
+  display_string(prompt,16,30,BLACK);
+  snprintf(prompt,32,"|    SPACE    |");
+  display_string(prompt,17,30,BLACK);
+  snprintf(prompt,32,"TO DELETE BLOCK");
+  display_string(prompt,17,10,BLACK);
+  snprintf(prompt,32,"+-------------+");
+  display_string(prompt,18,30,BLACK);
+  snprintf(prompt,32,"'p' to PAUSE, 'r' to RESUME");
+  display_string(prompt,19,10,BLACK);
+  snprintf(prompt,32,"'e' to EXIT");
+  display_string(prompt,20,10,BLACK);
+  if(game_time) {
+    snprintf(prompt,32,"Current time: ");
+    display_string(prompt,23,1,BLACK);
+    snprintf(prompt,32,"Score: ");
+    display_string(prompt,23,49,BLACK);
+  }
+  snprintf(prompt,32,"Press 'y' to go back.");
+  display_string(prompt,24,1,BLACK);
+}
+void home_screen()
+{
+  char c;
+  home_prompts();
+  score=0;
+  game_time=0;
+  while(1)
+  {
+    c=readchar();
+    if(c=='x') {
+      instruction_screen();
+      while(readchar()!='y');
+      clear_console();
+      home_prompts();
+      continue;
+    }
+    if(c=='s') {
+      curr_state=resume;
+      return;
+    }
+  }
+}
+void home_prompts()
+{
+  char prompt[32];
+  set_term_color(BLACK);
+  clear_console();
+  snprintf(prompt,32,"!!SAME GAME!!");
+  display_string(prompt,6,30,BLACK);
+  snprintf(prompt,32,"HIGHSCORE: %d",high_score);
+  display_string(prompt,7,30,BLACK);
+  snprintf(prompt,32,"'s' to Start");
+  display_string(prompt,9,30,BLACK);
+  display_prompts();
+}
+void game_start()
 {
   char c;char combo[8]="";
   while(1){
@@ -137,8 +250,10 @@ void game_run()
       if(selected_area_size) {
         compact();
         selected_area_size++;
-        if(last_color==curr_color)
+        if(last_color==curr_color) {
+          combo_color=curr_color;
           combo_multiplier++;
+        }
         else {
           last_color=curr_color;
           char *temp=combo;
@@ -146,6 +261,7 @@ void game_run()
             *temp=' ';temp++;
           }
           display_string(combo,13,67,BLACK);
+          combo_color=curr_color;
           combo_multiplier=1;
         }
         score+=selected_area_size*combo_multiplier;
@@ -169,10 +285,60 @@ void game_run()
         }
       }
     }
+    if(c=='x') {
+      instruction_screen();
+      curr_state=pause;
+      while(readchar()!='y');
+      set_term_color(BLACK);
+      clear_console();
+      curr_state=resume;
+      render_mesh();
+      display_prompts();
+      set_game_cursor(row_pos,col_pos,'|');
+      if(combo_color==0) {
+        display_string(combo,13,67,BLUE);
+      }
+      if(combo_color==1) {
+        display_string(combo,13,67,RED);
+      }
+      if(combo_color==2) {
+        display_string(combo,13,67,GREEN);
+      }
+      continue;
+    }
+    if(c=='p') {
+      curr_state=pause;
+      set_game_cursor(row_pos,col_pos,'\0');
+      display_string("PAUSED, press 'r' to RESUME",0,35,RED);
+      while(readchar()!='r');
+      curr_state=resume;
+      set_term_color(BLACK);
+      clear_console();
+      render_mesh();
+      display_prompts();
+      set_game_cursor(row_pos,col_pos,'|');
+      if(combo_color==0) {
+        display_string(combo,13,67,BLUE);
+      }
+      if(combo_color==1) {
+        display_string(combo,13,67,RED);
+      }
+      if(combo_color==2) {
+        display_string(combo,13,67,GREEN);
+      }
+      continue;
+    }
+    if(c=='e')
+    {
+      curr_state=exit;
+      return;
+    }
   }
 }
 void game_init()
 {
+  set_term_color(BLACK);
+  clear_console();
   int color,i,j;
   for(i=0;i<10;i++) {
     for(j=0;j<15;j++) {
@@ -186,14 +352,16 @@ void game_init()
       color_arr[i][j]=color;
     }
   }
-  hide_cursor();
+  score=0;
+  game_time=0;
   display_prompts();
   row_pos=0;col_pos=0;
   set_game_cursor(row_pos,col_pos,'|');
   last_color=-1;
+  combo_color=-1;
   selected_area_size=0;
   combo_multiplier=1;
-  game_run();
+  game_start();
   return;
 }
 void set_game_cursor(int r,int c,char ch)
@@ -219,18 +387,18 @@ void set_game_cursor(int r,int c,char ch)
 void display_prompts()
 {
   char prompt[32];
-  snprintf(prompt,32,"Current time: ");
-  display_string(prompt,23,1,BLACK);
-  snprintf(prompt,32,"Score: ");
-  display_string(prompt,23,49,BLACK);
-  snprintf(prompt,32,"Press 'X' for intructions.");
+  if(curr_state!=exit) {
+    snprintf(prompt,32,"Current time: ");
+    display_string(prompt,23,1,BLACK);
+    snprintf(prompt,32,"Score: ");
+    display_string(prompt,23,49,BLACK);
+    snprintf(prompt,32,"!!MULTIPLIER!!");
+    display_string(prompt,12,63,BLACK);
+  }
+  snprintf(prompt,32,"Press 'x' for intructions");
   display_string(prompt,24,1,BLACK);
   snprintf(prompt,32,"Sohil Habib 2014");
   display_string(prompt,24,62,BLACK);
-  snprintf(prompt,32,"!!MULTIPLIER!!");
-  display_string(prompt,12,63,BLACK);
-  snprintf(prompt,32,"0X");
-  display_string(prompt,13,67,BLACK);
 }
 void display_string(char *str,int row,int col,int color)
 {
@@ -255,15 +423,20 @@ void set_block(unsigned int r,unsigned int c,int color)
  **/
 void tick(unsigned int numTicks)
 {
-  int sec=numTicks/100;
-  int msec=numTicks%100;
+  if(curr_state==resume) {
+    game_time++;
+  }
+  int sec=game_time/100;
+  int msec=game_time%100;
   char buf[32];
   int color;
   get_term_color(&color);
-  snprintf(buf,32,"%d.%ds",sec,msec);
-  display_string(buf,23,15,BLACK);
-  snprintf(buf,32,"%d",score);
-  display_string(buf,23,56,BLACK);
+  if(game_time) {
+    snprintf(buf,32,"%d.%ds",sec,msec);
+    display_string(buf,23,15,BLACK);
+    snprintf(buf,32,"%d",score);
+    display_string(buf,23,56,BLACK);
+  }
   set_term_color(color);
 }
 void compact()
@@ -331,6 +504,9 @@ int game_complete()
       }
     }
   }
+  if(score>high_score)
+    high_score=score;
+  curr_state=complete;
   return 1;
 
 }
