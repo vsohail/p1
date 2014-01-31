@@ -12,9 +12,6 @@
 #include <p1kern.h>
 #include <handler_install.h>
 #include <video_defines.h>
-/* Think about where this declaration
- * should be... probably not here!
- */
 
 /* libc includes. */
 #include <stdio.h>
@@ -34,6 +31,17 @@
 #include <RNG/mt19937int.h>
 #include <string.h>
 
+#define NUM_ROW 10
+#define NUM_COL 15
+#define SCREEN_X 80
+#define SCREEN_Y 25
+#define BIG_BUFF 32
+#define SMALL_BUFF 8
+#define BLUE (BGND_BLUE | FGND_WHITE)
+#define RED (BGND_RED | FGND_WHITE)
+#define GREEN (BGND_GREEN | FGND_WHITE)
+#define BLACK (BGND_BLACK | FGND_WHITE)
+
 void tick(unsigned int numTicks);
 void game_init();
 void display_prompts();
@@ -49,6 +57,8 @@ void home_prompts();
 void instruction_screen();
 void game_run();
 int game_complete();
+
+unsigned int color_arr[NUM_ROW][NUM_COL];
 unsigned int score;
 unsigned int row_pos;
 int last_color;
@@ -59,13 +69,9 @@ int selected_area_size;
 int combo_multiplier;
 int combo_color;
 unsigned int col_pos;
-unsigned int color_arr[10][15];
-#define BLUE (BGND_BLUE | FGND_WHITE)
-#define RED (BGND_RED | FGND_WHITE)
-#define GREEN (BGND_GREEN | FGND_WHITE)
-#define BLACK (BGND_BLACK | FGND_WHITE)
+
 /** @brief Kernel entrypoint.
- *  
+ *
  *  This is the entrypoint for the kernel.  It simply sets up the
  *  drivers and passes control off to game_run().
  *
@@ -97,11 +103,19 @@ void game_run()
 }
 void complete_screen()
 {
-  display_string("Congratulations!!",0,15,BLUE);
-  display_string("Game",0,34,RED);
-  display_string("Over",0,40,GREEN);
-  display_string("'r' to restart",9,30,BLACK);
-  display_string("'e' to exit",10,30,BLACK);
+  int pos;
+  char prompt[BIG_BUFF];
+  snprintf(prompt,BIG_BUFF,"Congratulations!!");
+  pos=(NUM_COL*2)-15;
+  display_string(prompt,0,pos,BLUE);
+  pos+=strlen(prompt)+1;
+  snprintf(prompt,BIG_BUFF,"Game");
+  display_string(prompt,0,pos,RED);
+  pos+=strlen(prompt)+1;
+  snprintf(prompt,BIG_BUFF,"Over");
+  display_string(prompt,0,pos,GREEN);
+  display_string("'r' to restart",NUM_ROW-1,NUM_COL*2,BLACK);
+  display_string("'e' to exit",NUM_ROW,NUM_COL*2,BLACK);
   char c;
   while(1) {
     c=readchar();
@@ -117,62 +131,62 @@ void complete_screen()
 }
 void render_mesh()
 {
-  int color,i,j;
-  for(i=0;i<10;i++) {
-    for(j=0;j<15;j++) {
-      color=color_arr[i][j];
-      if(color==-1)
-        set_block(i,j,BLACK);
-      if(color==0)
-        set_block(i,j,BLUE);
-      if(color==1)
-        set_block(i,j,RED);
-      if(color==2)
-        set_block(i,j,GREEN);
+  int i,j;
+  for(i=0;i<NUM_ROW;i++) {
+    for(j=0;j<NUM_COL;j++) {
+      set_block(i,j,color_arr[i][j]);
     }
   }
 }
 void instruction_screen()
 {
-  char prompt[32];
+  char prompt[BIG_BUFF];
+  int y_pos;
+  int x_pos;
   set_term_color(BLACK);
+  y_pos=(SCREEN_Y/2)-6;
+  x_pos=SCREEN_X/2;
   clear_console();
-  snprintf(prompt,32,"!!Instructions!!");
-  display_string(prompt,6,30,BLACK);
-  snprintf(prompt,32,"+---+");
-  display_string(prompt,8,35,BLACK);
-  snprintf(prompt,32,"| W |");
-  display_string(prompt,9,35,BLACK);
-  snprintf(prompt,32,"+---+");
-  display_string(prompt,10,35,BLACK);
-  snprintf(prompt,32,"+---++---++---+");
-  display_string(prompt,11,30,BLACK);
-  snprintf(prompt,32,"TO MOVE CURSOR");
-  display_string(prompt,11,10,BLACK);
-  snprintf(prompt,32,"| A || S || D |");
-  display_string(prompt,12,30,BLACK);
-  snprintf(prompt,32,"+---++---++---+");
-  display_string(prompt,13,30,BLACK);
-  snprintf(prompt,32,"+-------------+");
-  display_string(prompt,16,30,BLACK);
-  snprintf(prompt,32,"|    SPACE    |");
-  display_string(prompt,17,30,BLACK);
-  snprintf(prompt,32,"TO DELETE BLOCK");
-  display_string(prompt,17,10,BLACK);
-  snprintf(prompt,32,"+-------------+");
-  display_string(prompt,18,30,BLACK);
-  snprintf(prompt,32,"'p' to PAUSE, 'r' to RESUME");
-  display_string(prompt,19,10,BLACK);
-  snprintf(prompt,32,"'e' to EXIT");
-  display_string(prompt,20,10,BLACK);
+  snprintf(prompt,BIG_BUFF,"!!Instructions!!");
+  display_string(prompt,y_pos,x_pos-10,BLACK);
+  snprintf(prompt,BIG_BUFF,"+---+");
+  display_string(prompt,y_pos+2,x_pos-5,BLACK);
+  snprintf(prompt,BIG_BUFF,"| W |");
+  display_string(prompt,y_pos+3,x_pos-5,BLACK);
+  snprintf(prompt,BIG_BUFF,"+---+");
+  display_string(prompt,y_pos+4,x_pos-5,BLACK);
+  snprintf(prompt,BIG_BUFF,"+---++---++---+");
+  display_string(prompt,y_pos+5,x_pos-10,BLACK);
+  snprintf(prompt,BIG_BUFF,"TO MOVE CURSOR");
+  display_string(prompt,y_pos+6,x_pos-30,BLACK);
+  snprintf(prompt,BIG_BUFF,"| A || S || D |");
+  display_string(prompt,y_pos+6,x_pos-10,BLACK);
+  snprintf(prompt,BIG_BUFF,"+---++---++---+");
+  display_string(prompt,y_pos+7,x_pos-10,BLACK);
+  snprintf(prompt,BIG_BUFF,"+-------------+");
+  display_string(prompt,y_pos+8,x_pos-10,BLACK);
+  snprintf(prompt,BIG_BUFF,"|    SPACE    |");
+  display_string(prompt,y_pos+9,x_pos-10,BLACK);
+  snprintf(prompt,BIG_BUFF,"TO DELETE BLOCK");
+  display_string(prompt,y_pos+9,x_pos-30,BLACK);
+  snprintf(prompt,BIG_BUFF,"+-------------+");
+  display_string(prompt,y_pos+10,x_pos-10,BLACK);
+  snprintf(prompt,BIG_BUFF,"'p' to PAUSE, 'r' to RESUME");
+  display_string(prompt,y_pos+11,x_pos-30,BLACK);
+  snprintf(prompt,BIG_BUFF,"'e' to EXIT");
+  display_string(prompt,y_pos+12,x_pos-30,BLACK);
   if(game_time) {
-    snprintf(prompt,32,"Current time: ");
-    display_string(prompt,23,1,BLACK);
-    snprintf(prompt,32,"Score: ");
-    display_string(prompt,23,49,BLACK);
+    snprintf(prompt,BIG_BUFF,"Current time: ");
+    display_string(prompt,SCREEN_Y-2,1,BLACK);
+    snprintf(prompt,BIG_BUFF,"Score: ");
+    x_pos=strlen(prompt);
+    display_string(prompt,SCREEN_Y-2,(NUM_COL*4)-11,BLACK);
   }
-  snprintf(prompt,32,"Press 'y' to go back.");
-  display_string(prompt,24,1,BLACK);
+  snprintf(prompt,BIG_BUFF,"Press 'y' to go back.");
+  display_string(prompt,SCREEN_Y-1,1,BLACK);
+  snprintf(prompt,BIG_BUFF,"Sohil Habib 2014");
+  x_pos=strlen(prompt);
+  display_string(prompt,SCREEN_Y-1,SCREEN_X-(x_pos+2),BLACK);
 }
 void home_screen()
 {
@@ -198,20 +212,20 @@ void home_screen()
 }
 void home_prompts()
 {
-  char prompt[32];
+  char prompt[BIG_BUFF];
   set_term_color(BLACK);
   clear_console();
-  snprintf(prompt,32,"!!SAME GAME!!");
-  display_string(prompt,6,30,BLACK);
-  snprintf(prompt,32,"HIGHSCORE: %d",high_score);
-  display_string(prompt,7,30,BLACK);
-  snprintf(prompt,32,"'s' to Start");
-  display_string(prompt,9,30,BLACK);
+  snprintf(prompt,BIG_BUFF,"!!SAME GAME!!");
+  display_string(prompt,SCREEN_Y/2,SCREEN_X/2-10,BLACK);
+  snprintf(prompt,BIG_BUFF,"HIGHSCORE: %d",high_score);
+  display_string(prompt,SCREEN_Y/2+1,SCREEN_X/2-10,BLACK);
+  snprintf(prompt,BIG_BUFF,"'s' to Start");
+  display_string(prompt,SCREEN_Y/2+3,SCREEN_X/2-10,BLACK);
   display_prompts();
 }
 void game_start()
 {
-  char c;char combo[8]="";
+  char c;char combo[SMALL_BUFF]="";
   while(1){
     c=readchar();
     if(c=='w') {
@@ -244,7 +258,7 @@ void game_start()
     }
     if(c==' ') {
       int curr_color=color_arr[row_pos][col_pos];
-      if(curr_color==-1)
+      if(curr_color==BLACK)
         continue;
       deleteblocks(row_pos,col_pos,0);
       if(selected_area_size) {
@@ -260,21 +274,13 @@ void game_start()
           while((*temp)!='\0') {
             *temp=' ';temp++;
           }
-          display_string(combo,13,67,BLACK);
+          display_string(combo,(SCREEN_Y/2)+1,SCREEN_X-6,BLACK);
           combo_color=curr_color;
           combo_multiplier=1;
         }
         score+=selected_area_size*combo_multiplier;
-        snprintf(combo,8,"%dX",combo_multiplier);
-        if(curr_color==0) {
-          display_string(combo,13,67,BLUE);
-        }
-        if(curr_color==1) {
-          display_string(combo,13,67,RED);
-        }
-        if(curr_color==2) {
-          display_string(combo,13,67,GREEN);
-        }
+        snprintf(combo,SMALL_BUFF,"%dX",combo_multiplier);
+        display_string(combo,(SCREEN_Y/2)+1,SCREEN_X-6,combo_color);
         selected_area_size=0;
         render_mesh();
         if(!game_complete())
@@ -295,21 +301,13 @@ void game_start()
       render_mesh();
       display_prompts();
       set_game_cursor(row_pos,col_pos,'|');
-      if(combo_color==0) {
-        display_string(combo,13,67,BLUE);
-      }
-      if(combo_color==1) {
-        display_string(combo,13,67,RED);
-      }
-      if(combo_color==2) {
-        display_string(combo,13,67,GREEN);
-      }
+      display_string(combo,(SCREEN_Y/2)+1,SCREEN_X-6,combo_color);
       continue;
     }
     if(c=='p') {
       curr_state=pause;
       set_game_cursor(row_pos,col_pos,'\0');
-      display_string("PAUSED, press 'r' to RESUME",0,35,RED);
+      display_string("PAUSED, press 'r' to RESUME",0,(SCREEN_X/2)-5,RED);
       while(readchar()!='r');
       curr_state=resume;
       set_term_color(BLACK);
@@ -317,15 +315,7 @@ void game_start()
       render_mesh();
       display_prompts();
       set_game_cursor(row_pos,col_pos,'|');
-      if(combo_color==0) {
-        display_string(combo,13,67,BLUE);
-      }
-      if(combo_color==1) {
-        display_string(combo,13,67,RED);
-      }
-      if(combo_color==2) {
-        display_string(combo,13,67,GREEN);
-      }
+      display_string(combo,(SCREEN_Y/2)+1,SCREEN_X-6,combo_color);
       continue;
     }
     if(c=='e')
@@ -344,12 +334,12 @@ void game_init()
     for(j=0;j<15;j++) {
       color=genrand()%3;
       if(color==0)
-        set_block(i,j,BLUE);
+        color_arr[i][j]=BLUE;
       if(color==1)
-        set_block(i,j,RED);
+        color_arr[i][j]=RED;
       if(color==2)
-        set_block(i,j,GREEN);
-      color_arr[i][j]=color;
+        color_arr[i][j]=GREEN;
+      set_block(i,j,color_arr[i][j]);
     }
   }
   score=0;
@@ -366,14 +356,7 @@ void game_init()
 }
 void set_game_cursor(int r,int c,char ch)
 {
-  if(color_arr[r][c]==0)
-    set_term_color(BLUE);
-  else if(color_arr[r][c]==1)
-    set_term_color(RED);
-  else if(color_arr[r][c]==2)
-    set_term_color(GREEN);
-  else if(color_arr[r][c]==-1)
-    set_term_color(BLACK);
+  set_term_color(color_arr[r][c]);
   r*=2;c*=4;
   c+=2;r+=2;
   set_cursor(r,c+1);
@@ -386,19 +369,23 @@ void set_game_cursor(int r,int c,char ch)
 }
 void display_prompts()
 {
-  char prompt[32];
+  char prompt[BIG_BUFF];
+  int x_pos;
   if(curr_state!=exit) {
-    snprintf(prompt,32,"Current time: ");
-    display_string(prompt,23,1,BLACK);
-    snprintf(prompt,32,"Score: ");
-    display_string(prompt,23,49,BLACK);
-    snprintf(prompt,32,"!!MULTIPLIER!!");
-    display_string(prompt,12,63,BLACK);
+    snprintf(prompt,BIG_BUFF,"Current time: ");
+    display_string(prompt,SCREEN_Y-2,1,BLACK);
+    snprintf(prompt,BIG_BUFF,"Score: ");
+    x_pos=strlen(prompt);
+    display_string(prompt,SCREEN_Y-2,(NUM_COL*4)-11,BLACK);
+    snprintf(prompt,BIG_BUFF,"!!MULTIPLIER!!");
+    x_pos=strlen(prompt);
+    display_string(prompt,SCREEN_Y/2,SCREEN_X-(x_pos+2),BLACK);
   }
-  snprintf(prompt,32,"Press 'x' for intructions");
-  display_string(prompt,24,1,BLACK);
-  snprintf(prompt,32,"Sohil Habib 2014");
-  display_string(prompt,24,62,BLACK);
+  snprintf(prompt,BIG_BUFF,"Press 'x' to show instructions");
+  display_string(prompt,SCREEN_Y-1,1,BLACK);
+  snprintf(prompt,BIG_BUFF,"Sohil Habib 2014");
+  x_pos=strlen(prompt);
+  display_string(prompt,SCREEN_Y-1,SCREEN_X-(x_pos+2),BLACK);
 }
 void display_string(char *str,int row,int col,int color)
 {
@@ -428,27 +415,27 @@ void tick(unsigned int numTicks)
   }
   int sec=game_time/100;
   int msec=game_time%100;
-  char buf[32];
+  char buf[BIG_BUFF];
   int color;
   get_term_color(&color);
   if(game_time) {
-    snprintf(buf,32,"%d.%ds",sec,msec);
-    display_string(buf,23,15,BLACK);
-    snprintf(buf,32,"%d",score);
-    display_string(buf,23,56,BLACK);
+    snprintf(buf,BIG_BUFF,"%d.%ds",sec,msec);
+    display_string(buf,SCREEN_Y-2,15,BLACK);
+    snprintf(buf,BIG_BUFF,"%d",score);
+    display_string(buf,SCREEN_Y-2,(NUM_COL*4)-4,BLACK);
   }
   set_term_color(color);
 }
 void compact()
 {
   int i,j,k;
-  for(i=0;i<15;i++) {
-    for(j=9;j>0;j--) {
-      if(color_arr[j][i]==-1) {
+  for(i=0;i<NUM_COL;i++) {
+    for(j=NUM_ROW-1;j>0;j--) {
+      if(color_arr[j][i]==BLACK) {
         for(k=j-1;k>=0;k--) {
-          if(color_arr[k][i]!=-1) {
+          if(color_arr[k][i]!=BLACK) {
             color_arr[j][i]=color_arr[k][i];
-            color_arr[k][i]=-1;
+            color_arr[k][i]=BLACK;
             j--;
           }
         }
@@ -457,25 +444,25 @@ void compact()
     }
   }
   int count;
-  for(i=14;i>0;i--) {
+  for(i=NUM_COL-1;i>0;i--) {
     count=0;
-    for(j=0;j<10;j++) {
-      if(color_arr[j][i]==-1) {
+    for(j=0;j<NUM_ROW;j++) {
+      if(color_arr[j][i]==BLACK) {
         count++;
       }
     }
-    if(count==10) {
+    if(count==NUM_ROW) {
       for(k=i-1;k>=0;k--) {
         count=0;
-        for(j=0;j<10;j++) {
-          if(color_arr[j][k]==-1) {
+        for(j=0;j<NUM_ROW;j++) {
+          if(color_arr[j][k]==BLACK) {
             count++;
           }
         }
-        if(count!=10) {
-          for(j=0;j<10;j++) {
+        if(count!=NUM_ROW) {
+          for(j=0;j<NUM_ROW;j++) {
             color_arr[j][i]=color_arr[j][k];
-            color_arr[j][k]=-1;
+            color_arr[j][k]=BLACK;
           }
           i--;
         }
@@ -487,12 +474,12 @@ void compact()
 int game_complete()
 {
   int row,col;
-  for(col = 14; col >=0; col--)
+  for(col = NUM_COL-1; col >=0; col--)
   {
-    for(row = 9; row > 0; row--)
+    for(row = NUM_ROW-1; row > 0; row--)
     {
       int color = color_arr[row][col];
-      if(color == -1)
+      if(color == BLACK)
         break;
       else
       {
@@ -512,34 +499,34 @@ int game_complete()
 }
 void deleteblocks(int row, int col,int init)
 {
-  if(row < 0 || row >= 10 || col < 0 || col >= 15)
+  if(row < 0 || row >= NUM_ROW || col < 0 || col >= NUM_COL)
     return;
   int color = color_arr[row][col];
   if(init) {
-    color_arr[row][col]=-1;
+    color_arr[row][col] = BLACK;
     selected_area_size++;
   }
   if(row - 1 >= 0) {
     if(color_arr[row - 1][col] == color) {
-      color_arr[row][col]=-1;
+      color_arr[row][col] = BLACK;
       deleteblocks(row - 1, col,1);
     }
   }
-  if(row + 1 < 10) {
+  if(row + 1 < NUM_ROW) {
     if(color_arr[row + 1][col] == color) {
-      color_arr[row][col]=-1;
+      color_arr[row][col]= BLACK;
       deleteblocks(row + 1,col,1);
     }
   }
   if(col - 1 >= 0) {
     if(color_arr[row][col - 1] == color) {
-      color_arr[row][col]=-1;
+      color_arr[row][col] = BLACK;
       deleteblocks(row, col - 1,1);
     }
   }
-  if(col + 1 < 15) {
+  if(col + 1 < NUM_COL) {
     if(color_arr[row][col + 1] == color) {
-      color_arr[row][col]=-1;
+      color_arr[row][col] = BLACK;
       deleteblocks(row, col + 1,1);
     }
   }
