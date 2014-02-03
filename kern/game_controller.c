@@ -50,6 +50,7 @@ int game_complete();
 unsigned int color_arr[NUM_ROW][NUM_COL];
 unsigned int score;
 unsigned int row_pos;
+unsigned int game_seed;
 int last_color;
 int game_time;
 int high_score;
@@ -302,9 +303,9 @@ void game_init()
   set_term_color(BLACK);
   clear_console();
   int color,i,j;
-  for(i=0;i<10;i++) {
-    for(j=0;j<15;j++) {
-      color=genrand()%3;
+  for(i=0;i<NUM_ROW;i++) {
+    for(j=0;j<NUM_COL;j++) {
+      color=sgenrand(game_seed)%3;
       if(color==0)
         color_arr[i][j]=BLUE;
       if(color==1)
@@ -385,6 +386,7 @@ void tick(unsigned int numTicks)
   if(curr_state==resume) {
     game_time++;
   }
+  game_seed=numTicks;
   int sec=game_time/100;
   int msec=game_time%100;
   char buf[BIG_BUFF];

@@ -9,7 +9,9 @@
 #include <x86/seg.h>
 #include <simics.h>
 #define MAX_SIZE 256
-
+#define LOWER_HALF 0xFFFF
+#define UPPER_HALF 0x0000FFFF
+#define TRAP_GATE_DEFAULT 0x8F
 void (*tick_addr)(unsigned int);
 unsigned int front;
 unsigned int rear;
@@ -57,20 +59,22 @@ int handler_install(void (*tickback)(unsigned int))
   tick_addr=tickback;
   void *base;
   base=(idt_base()+(TIMER_IDT_ENTRY)*8);
-  *(unsigned *)base=((SEGSEL_KERNEL_CS<<16) | (((unsigned)timer_wrapper)&0xFFFF));
+  *(unsigned *)base=((SEGSEL_KERNEL_CS<<16) | (((unsigned)timer_wrapper)&LOWER_HALF));
   base += 4;
-  *(unsigned *)base=(((unsigned)timer_wrapper)&0xFFFF0000) | (0x8F<<8);
+  *(unsigned *)base=(((unsigned)timer_wrapper)&UPPER_HALF) | (TRAP_GATE_DEFAULT<<8);
+
   outb(TIMER_MODE_IO_PORT,TIMER_SQUARE_WAVE);
-  outb(TIMER_PERIOD_IO_PORT,0x9C);
-  outb(TIMER_PERIOD_IO_PORT,0x2E);
+  unsigned int timer_count=TIMER_RATE/100;
+  outb(TIMER_PERIOD_IO_PORT,(timer_count)&0xFF);
+  outb(TIMER_PERIOD_IO_PORT,((timer_count)&0xFF00)>>8);
 
   front=0;
   rear=-1;
   curr_size=0;
   base=(idt_base()+(KEY_IDT_ENTRY)*8);
-  *(unsigned *)base=((SEGSEL_KERNEL_CS<<16) | (((unsigned)kbd_wrapper)&0xFFFF));
+  *(unsigned *)base=((SEGSEL_KERNEL_CS<<16) | (((unsigned)kbd_wrapper)&LOWER_HALF));
   base += 4;
-  *(unsigned *)base=(((unsigned)kbd_wrapper)&0xFFFF0000) | (0x8F<<8);
+  *(unsigned *)base=(((unsigned)kbd_wrapper)&UPPER_HALF) | (TRAP_GATE_DEFAULT<<8);
 
   enable_interrupts();
 
