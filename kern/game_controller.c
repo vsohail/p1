@@ -303,9 +303,10 @@ void game_init()
   set_term_color(BLACK);
   clear_console();
   int color,i,j;
+  sgenrand((unsigned long)game_seed);
   for(i=0;i<NUM_ROW;i++) {
     for(j=0;j<NUM_COL;j++) {
-      color=sgenrand(game_seed)%3;
+      color=genrand()%3;
       if(color==0)
         color_arr[i][j]=BLUE;
       if(color==1)
