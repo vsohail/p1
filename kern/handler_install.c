@@ -10,7 +10,7 @@
 #include <simics.h>
 #define MAX_SIZE 256
 #define LOWER_HALF 0xFFFF
-#define UPPER_HALF 0x0000FFFF
+#define UPPER_HALF 0xFFFF0000
 #define TRAP_GATE_DEFAULT 0x8F
 void (*tick_addr)(unsigned int);
 unsigned int front;
@@ -65,8 +65,9 @@ int handler_install(void (*tickback)(unsigned int))
 
   outb(TIMER_MODE_IO_PORT,TIMER_SQUARE_WAVE);
   unsigned int timer_count=TIMER_RATE/100;
-  outb(TIMER_PERIOD_IO_PORT,(timer_count)&0xFF);
-  outb(TIMER_PERIOD_IO_PORT,((timer_count)&0xFF00)>>8);
+  timer_count++;
+  outb(TIMER_PERIOD_IO_PORT,0x9C);
+  outb(TIMER_PERIOD_IO_PORT,0x2E);
 
   front=0;
   rear=-1;

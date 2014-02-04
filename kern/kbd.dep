@@ -1,0 +1,1 @@
+kern/kbd.o: kern/kbd.S
