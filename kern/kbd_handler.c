@@ -1,10 +1,18 @@
+/** @file kdb_handler.c
+ *  @brief the file contains the code for the keyboard handler and the readchar api function
+ *         needed to get input from kyboard
+ *
+ *  @author Sohil Habib (snhabib)
+ *  @bug No known bugs.
+ */
+
+/* necessary includes */
 #include <stdio.h>
 #include <x86/asm.h>
-#include <x86/interrupt_defines.h>
 #include <x86/keyhelp.h>
 #include <handler_install.h>
+#include <x86/interrupt_defines.h>
 #include <p1kern.h>
-#include <stdio.h>
 
 int readchar(void)
 {
@@ -20,6 +28,13 @@ int readchar(void)
   return -1;
 }
 
+/** @brief the handler for the keyboard
+ *
+ *  inserts the key entered into the buffer
+ *  and acknowledges interrupt recieved
+ *
+ *  @return Void.
+ */
 void kbd_handler()
 {
   insert_q((unsigned)ind(KEYBOARD_PORT));
