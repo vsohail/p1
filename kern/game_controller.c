@@ -402,6 +402,13 @@ void game_start()
  */
 void game_init()
 {
+  score=0;
+  game_time=0;
+  last_color=-1;
+  combo_color=-1;
+  selected_area_size=0;
+  combo_multiplier=1;
+  row_pos=0;col_pos=0;
   set_term_color(BLACK);
   clear_console();
   int color,i,j;
@@ -418,15 +425,8 @@ void game_init()
       set_block(i,j,color_arr[i][j]);
     }
   }
-  score=0;
-  game_time=0;
   display_prompts();
-  row_pos=0;col_pos=0;
   set_game_cursor(row_pos,col_pos,'|');
-  last_color=-1;
-  combo_color=-1;
-  selected_area_size=0;
-  combo_multiplier=1;
   game_start();
   return;
 }
