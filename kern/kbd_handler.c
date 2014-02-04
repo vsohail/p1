@@ -1,4 +1,4 @@
-/** @file kdb_handler.c
+/** @file kbd_handler.c
  *  @brief the file contains the code for the keyboard handler and the readchar api function
  *         needed to get input from kyboard
  *
