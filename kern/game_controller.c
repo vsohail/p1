@@ -1,36 +1,50 @@
-/** @file game.c
- *  @brief A kernel with timer, keyboard, console support
+/** @file game_controller.c
+ *  @brief The heart of the game. Contains all the routines
+ *         necessary to startup, play and terminate a game.
  *
- *  This file contains the kernel's main() function.
+ *  This file contains the game entry point game_run,
+ *  the game initializations, the game logic, and the
+ *  various other functions and state variables needed for
+ *  the functioning of the game.
  *
- *  It sets up the drivers and starts the game.
- *
- *  @author Michael Berman (mberman)
+ *  @author Sohil Habib (snhabib)
  *  @bug No known bugs.
  */
 
 #include <p1kern.h>
-#include <handler_install.h>
 #include <video_defines.h>
 
 /* libc includes. */
 #include <stdio.h>
 
-/* x86 specific includes */
+/* random function includes */
 #include <RNG/mt19937int.h>
+
 #include <string.h>
 
+/* max number of rows in game mesh */
 #define NUM_ROW 10
+
+/* max number of columns in game mesh */
 #define NUM_COL 15
+
+/* screen max x coordinate */
 #define SCREEN_X 80
+
+/* screen max y coordinate */
 #define SCREEN_Y 25
+
+/* buffer size definitions */
 #define BIG_BUFF 32
 #define SMALL_BUFF 8
+
+/* color definitions */
 #define BLUE (BGND_BLUE | FGND_WHITE)
 #define RED (BGND_RED | FGND_WHITE)
 #define GREEN (BGND_GREEN | FGND_WHITE)
 #define BLACK (BGND_BLACK | FGND_WHITE)
 
+/* -- Function Definitions -- */
 void tick(unsigned int numTicks);
 void game_init();
 void display_prompts();
@@ -47,19 +61,38 @@ void instruction_screen();
 void game_run();
 int game_complete();
 
+/* the array which maintains game mesh state */
 unsigned int color_arr[NUM_ROW][NUM_COL];
+/* the game score */
 unsigned int score;
+/* the row position of game cursor */
 unsigned int row_pos;
-unsigned int game_seed;
-int last_color;
-int game_time;
-int high_score;
-enum game_state {exit,pause,resume,complete} curr_state;
-int selected_area_size;
-int combo_multiplier;
-int combo_color;
+/* the column position of game cursor */
 unsigned int col_pos;
+/* the seed to generate the random number for a game session */
+unsigned int game_seed;
+/* the color of the block last cleared */
+int last_color;
+/* in game time */
+int game_time;
+/* the high score!! */
+int high_score;
+/* the state of the game to effectively handle each case */
+enum game_state {exit,pause,resume,complete} curr_state;
+/* the area of the cleared block */
+int selected_area_size;
+/* the combo multiplier */
+int combo_multiplier;
+/* the color of the current combo multiplier */
+int combo_color;
 
+/** @brief game_run is the entry point of the game
+ *
+ *  It controls the state change from completed to exited
+ *  and the initialization of each game session.
+ *
+ *  @return Void.
+ */
 void game_run()
 {
   hide_cursor();
@@ -74,6 +107,17 @@ void game_run()
     }
   }while(curr_state!=exit);
 }
+
+/** @brief complete_screen is the screen shown to the user
+ *         when the game completes.
+ *
+ *  This function runs when game_complete returns a true and
+ *  changes the state of the game to complete. Moreover it
+ *  freezes the game times and allows the user to either
+ *  restart or exit the game.
+ *
+ *  @return Void.
+ */
 void complete_screen()
 {
   int pos;
@@ -102,6 +146,14 @@ void complete_screen()
     }
   }
 }
+
+/** @brief render_mesh renders the game mesh.
+ *
+ *  This function is responsible for siplaying the
+ *  color matrix on the screen after each user action.
+ *
+ *  @return Void.
+ */
 void render_mesh()
 {
   int i,j;
@@ -111,6 +163,16 @@ void render_mesh()
     }
   }
 }
+
+/** @brief instruction_screen renders the intruction
+ *         string.
+ *
+ * This function is called when the user presses 'x'
+ * and returns when the user presses 'y', It also pauses
+ * the game.
+ *
+ * @return Void.
+ */
 void instruction_screen()
 {
   char prompt[BIG_BUFF];
@@ -161,6 +223,15 @@ void instruction_screen()
   x_pos=strlen(prompt);
   display_string(prompt,SCREEN_Y-1,SCREEN_X-(x_pos+2),BLACK);
 }
+
+/** @brief home_screen renders the game home screen logic.
+ *
+ *  It gives the user an option to either view the
+ *  instructions or start a new game. Also shows the high
+ *  score.
+ *
+ *  @return Void.
+ */
 void home_screen()
 {
   char c;
@@ -183,6 +254,15 @@ void home_screen()
     }
   }
 }
+
+/** @brief home_prompts is the function that displays the
+ *         prompts shown on the home_screen
+ *
+ *  Separating the prompt from the logic provides flexibilty
+ *  which changing screens.
+ *
+ *  @return Void.
+ */
 void home_prompts()
 {
   char prompt[BIG_BUFF];
@@ -196,6 +276,18 @@ void home_prompts()
   display_string(prompt,SCREEN_Y/2+3,SCREEN_X/2-10,BLACK);
   display_prompts();
 }
+
+/** @brief game_start starts the game logic for a session
+ *         of the game
+ *
+ *  Handles the movement of the game cursor in the mesh
+ *  with the w,a,s,d keys and select a block with the space key.
+ *  Allows the user to pause,resume and exit the game.
+ *  Also contains the logic for instruction screen. This function
+ *  also handles the scoring and the combo multiplier logic
+ *
+ *  @return Void.
+ */
 void game_start()
 {
   char c;char combo[SMALL_BUFF]="";
@@ -298,6 +390,16 @@ void game_start()
     }
   }
 }
+
+/** @brief game_init initilizes a game session.
+ *
+ *  The function resets the game state variables,
+ *  generates a random mesh, populated with colors
+ *  blue,red,green and then transfers control
+ *  to game_start which starts the game.
+ *
+ *  @return Void.
+ */
 void game_init()
 {
   set_term_color(BLACK);
@@ -328,8 +430,18 @@ void game_init()
   game_start();
   return;
 }
+
+/** @brief set_game_cursor is resposible for moving
+ *         the cursor to a specific position
+ *
+ *  @param r The row to move the cursor to
+ *  @param c The column to move the cursor to
+ *  @param ch The character to use for the cursor
+ *  @return Void.
+ */
 void set_game_cursor(int r,int c,char ch)
 {
+  // The values of r,c are checked before they are sent
   set_term_color(color_arr[r][c]);
   r*=2;c*=4;
   c+=2;r+=2;
@@ -341,6 +453,15 @@ void set_game_cursor(int r,int c,char ch)
   putbyte(ch);
 
 }
+
+/** @brief display_prompts displays the prompts
+ *         that are common to all the screens
+ *
+ *  The values to be displayed are handled by the
+ *  state of the game.
+ *
+ *  @return Void.
+ */
 void display_prompts()
 {
   char prompt[BIG_BUFF];
@@ -361,12 +482,30 @@ void display_prompts()
   x_pos=strlen(prompt);
   display_string(prompt,SCREEN_Y-1,SCREEN_X-(x_pos+2),BLACK);
 }
+
+/** @brief wrapper function to display a string on the console.
+ *
+ *  Takes a string and its co-ordinates and color and prints it
+ *  on the console at the appropriate position.
+ *
+ *  @param str The string pointe.r
+ *  @param row The row number to put the string.
+ *  @param col The column number to put the string.
+ *  @param color The color to use while printing the string.
+ *  @return Void.
+ */
 void display_string(char *str,int row,int col,int color)
 {
   set_term_color(color);
   set_cursor(row,col);
   putbytes(str,strlen(str));
 }
+
+/** @brief sets a block to a particular color
+ *         as per the game mesg requirements.
+ *
+ *  @return Void.
+ */
 void set_block(unsigned int r,unsigned int c,int color)
 {
   int i,j;
@@ -376,12 +515,16 @@ void set_block(unsigned int r,unsigned int c,int color)
     for(j=0;j<4;j++)
       draw_char(r+i,c+j,'\0',color);
 }
+
 /** @brief Tick function, to be called by the timer interrupt handler
  *
- *  In a real game, this function would perform processing which
- *  should be invoked by timer interrupts.
+ *  In a real game, this function would performs processing which
+ *  should be invoked by timer interrupts. The function updates
+ *  game score,time on screen and also helps initialize the seed
+ *  Also performs differently for different game states.
  *
- **/
+ *  @param numTicks the timer ticks
+ */
 void tick(unsigned int numTicks)
 {
   if(curr_state==resume) {
@@ -401,9 +544,26 @@ void tick(unsigned int numTicks)
   }
   set_term_color(color);
 }
+
+/** @brief compact contains the logic to compact the block mesh
+ *
+ *  The function is divided into 2 halves
+ *  - the falling of blocks
+ *  - the column compaction
+ *
+ *  the first part seeks the first empty block in a column
+ *  and keeps replacing all blocks from that empty block onwards
+ *  with a filled block
+ *
+ *  the second part does the sma ething but with an empty
+ *  column and then shifts the column inward(rightward in this case)
+ *
+ *  @return Void.
+ */
 void compact()
 {
   int i,j,k;
+  // block falling logic
   for(i=0;i<NUM_COL;i++) {
     for(j=NUM_ROW-1;j>0;j--) {
       if(color_arr[j][i]==BLACK) {
@@ -418,6 +578,7 @@ void compact()
       }
     }
   }
+  // column compaction algorithm
   int count;
   for(i=NUM_COL-1;i>0;i--) {
     count=0;
@@ -446,6 +607,16 @@ void compact()
     }
   }
 }
+
+/** @brief contains the logic to detect game completion
+ *
+ *  apart from the obvious case of all the blocks being
+ *  BLACK, the logic also checks every block adjacent to
+ *  and above a certain block to not be of a certain color.
+ *  It also updates the high score if necessary.
+ *
+ *  @return int 1 - if complete, 0 otherwise
+ */
 int game_complete()
 {
   int row,col;
@@ -470,8 +641,21 @@ int game_complete()
     high_score=score;
   curr_state=complete;
   return 1;
-
 }
+
+/** @brief contains the delete block logic
+ *
+ *  Apart from the first block, for every other block
+ *  deletion is performed immediately. For each block,
+ *  its adjacent(top,bottom,left,right) blocks are checked
+ *  to be of same color and then recursively called on each
+ *  such block
+ *
+ *  @param row The row position in mesh of the block selected
+ *  @param col The col position in mesh of the block selected
+ *  @param init Whether it is the initial block or no (0 for initial)
+ *  @return Void.
+ */
 void deleteblocks(int row, int col,int init)
 {
   if(row < 0 || row >= NUM_ROW || col < 0 || col >= NUM_COL)

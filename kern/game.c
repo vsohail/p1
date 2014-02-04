@@ -5,11 +5,14 @@
  *
  *  It sets up the drivers and starts the game.
  *
- *  @author Michael Berman (mberman)
+ *  @author Sohil Habib (snhabib)
  *  @bug No known bugs.
  */
 
+/* handler installer function include */
 #include <handler_install.h>
+
+/* game startup routine includes */
 #include <game_controller.h>
 
 /* libc includes. */
@@ -36,9 +39,6 @@
  */
 int kernel_main(mbinfo_t *mbinfo, int argc, char **argv, char **envp)
 {
-  /*
-   * Initialize device-driver library.
-   */
   handler_install(tick);
   enable_interrupts();
   game_run();

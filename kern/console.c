@@ -1,12 +1,32 @@
+/** @file console.c
+ *  @brief the console driver definitions.
+ *
+ *  This file contains all the console driver definitions
+ *  as per the declarations in p1kern.h. All the function details
+ *  are specified in the p1kern.h file
+ *
+ *  @author Sohil Habib (snhabib)
+ *  @bug No known bugs.
+ */
+
 #include <p1kern.h>
 #include <stdio.h>
 #include <video_defines.h>
 #include <x86/asm.h>
 #include <string.h>
+
+/*
+ * The position and state of the cursor are
+ * maintained by these variables variable.
+ */
 static unsigned int row_pos;
 static unsigned int col_pos;
 static unsigned int is_hidden;
+
+
+/* Maintains the color of the console window. */
 static unsigned int console_color;
+
 void console_init()
 {
   is_hidden=0;

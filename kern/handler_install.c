@@ -64,10 +64,8 @@ int handler_install(void (*tickback)(unsigned int))
   *(unsigned *)base=(((unsigned)timer_wrapper)&UPPER_HALF) | (TRAP_GATE_DEFAULT<<8);
 
   outb(TIMER_MODE_IO_PORT,TIMER_SQUARE_WAVE);
-  unsigned int timer_count=TIMER_RATE/100;
-  timer_count++;
-  outb(TIMER_PERIOD_IO_PORT,0x9C);
-  outb(TIMER_PERIOD_IO_PORT,0x2E);
+  outb(TIMER_PERIOD_IO_PORT,(TIMER_RATE/100)&0xFF);
+  outb(TIMER_PERIOD_IO_PORT,((TIMER_RATE/100)&0xFF00)>>8);
 
   front=0;
   rear=-1;
