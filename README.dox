@@ -1,0 +1,15 @@
+/**
+
+@mainpage 15-410 Project 1
+
+@author Sohil Habib (snhabib)
+
+Same Game.
+
+A simple game running as a single task in kernel mode using
+the 3 device drivers(keyboard,display,timer) written for the
+kernel. The game is a keyboard controlled version of Clickomania
+
+Writing the game and seeing it run on bare hardware was a great experience.
+
+*/
